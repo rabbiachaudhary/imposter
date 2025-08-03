@@ -637,7 +637,7 @@ def show_discussion_phase(game_info, game_id, player_name):
             st.rerun()
     
     # Auto refresh every 3 seconds to show new words and phase changes
-    time.sleep(3)
+    time.sleep(1.5)
     st.rerun()
 
 def show_voting_phase(game_info, game_id, player_name):
