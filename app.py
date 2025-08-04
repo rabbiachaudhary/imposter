@@ -7,17 +7,14 @@ import sqlite3
 import threading
 from datetime import datetime, timedelta
 
-# Database setup
 DB_NAME = "imposter_game.db"
 db_lock = threading.Lock()
-
 def init_database():
     """Initialize the SQLite database"""
     with db_lock:
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
-        
-        # Games table
+
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS games (
                 game_id TEXT PRIMARY KEY,
@@ -31,8 +28,6 @@ def init_database():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
-        
-        # Players table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS players (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,7 +40,6 @@ def init_database():
             )
         ''')
         
-        # Discussion words table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS discussion_words (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,7 +51,6 @@ def init_database():
             )
         ''')
         
-        # Votes table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS votes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -87,7 +80,6 @@ def cleanup_old_games():
         conn.commit()
         conn.close()
 
-# Initialize Groq client
 def init_groq_client():
     if 'groq_client' not in st.session_state:
         # You need to set your Groq API key here
@@ -101,8 +93,7 @@ def generate_words_with_groq():
     """Generate a normal word and an imposter word using Groq API"""
     try:
         client = st.session_state.groq_client
-        
-        # Generate main word
+
         main_word_prompt = "Generate a single common noun (one word only) that people can easily describe with related words. Examples: apple, car, book, tree. Just return the word, nothing else."
         
         main_response = client.chat.completions.create(
@@ -116,7 +107,6 @@ def generate_words_with_groq():
         
         main_word = main_response.choices[0].message.content.strip().lower()
         
-        # Generate imposter word (related but different)
         imposter_prompt = f"Generate a single word that is somewhat related to '{main_word}' but different enough that someone describing it would seem suspicious. Just return the word, nothing else."
         
         imposter_response = client.chat.completions.create(
@@ -134,7 +124,6 @@ def generate_words_with_groq():
     
     except Exception as e:
         st.error(f"Error generating words: {e}")
-        # Fallback words if API fails
         word_pairs = [
             ("apple", "orange"),
             ("car", "bicycle"),
@@ -144,7 +133,7 @@ def generate_words_with_groq():
         ]
         return random.choice(word_pairs)
 
-# Database operations
+
 def create_game_in_db(game_id, host_name):
     """Create a new game in the database"""
     with db_lock:
@@ -175,7 +164,6 @@ def join_game_in_db(game_id, player_name):
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
         
-        # Check if game exists and not started
         cursor.execute("SELECT started FROM games WHERE game_id = ?", (game_id,))
         result = cursor.fetchone()
         
@@ -241,7 +229,6 @@ def start_game_in_db(game_id):
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
         
-        # Get players
         cursor.execute("SELECT player_name FROM players WHERE game_id = ?", (game_id,))
         players = [row[0] for row in cursor.fetchall()]
         
@@ -249,20 +236,16 @@ def start_game_in_db(game_id):
             conn.close()
             return False, "Need at least 3 players to start!"
         
-        # Generate words using Groq
         main_word, imposter_word = generate_words_with_groq()
         
-        # Choose random imposter
         imposter = random.choice(players)
         
-        # Update game
         cursor.execute('''
             UPDATE games 
             SET started = TRUE, phase = 'discussion', main_word = ?, imposter_word = ?, imposter = ?
             WHERE game_id = ?
         ''', (main_word, imposter_word, imposter, game_id))
         
-        # Assign words to players
         for player in players:
             word = imposter_word if player == imposter else main_word
             is_imposter = player == imposter
