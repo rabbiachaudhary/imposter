@@ -1,2 +1,5 @@
+.streamlit
 # Auto detect text files and perform LF normalization
 * text=auto
+* toml=auto
+
