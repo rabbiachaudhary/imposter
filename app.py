@@ -94,7 +94,7 @@ def generate_words_with_groq():
     try:
         client = st.session_state.groq_client
 
-        main_word_prompt = "Generate a single common noun (one word only) that people can easily describe with related words. Examples: apple, car, book, tree. Just return the word, nothing else."
+        main_word_prompt = "You are generating a single fun, surprising, and recognizable word or short phrase for a social deduction game. It should be something most people would know, such as a fictional character, movie title, celebrity name, brand, or cultural reference. Avoid boring everyday items like car or house. It must be clear, not obscure, and no more than three words. Output exactly one word or phrase and nothing else."
         
         main_response = client.chat.completions.create(
             messages=[
@@ -107,7 +107,7 @@ def generate_words_with_groq():
         
         main_word = main_response.choices[0].message.content.strip().lower()
         
-        imposter_prompt = f"Generate a single word that is somewhat related to '{main_word}' but different enough that someone describing it would seem suspicious. Just return the word, nothing else."
+        imposter_prompt = f"You are generating a single impostor word or short phrase for a social deduction game. It should be in the same general category or theme as the secret word {main_word} but be different enough to cause confusion. Use fun, surprising, and recognizable references like fictional characters, movies, celebrities, brands, or cultural icons. Avoid generic everyday items like car or house. It must be clear, not obscure, and no more than three words. Output exactly one word or phrase and nothing else."
         
         imposter_response = client.chat.completions.create(
             messages=[
